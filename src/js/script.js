@@ -1,5 +1,5 @@
 $("document").ready(function() {
-    plotDataCanvas();
+    plotDataNoBinding();
 });
 
 
@@ -17,7 +17,7 @@ function min2d(data) {
 }
 
 
-function condense(x, y, z) {
+function zipData(x, y, z) {
     var out = [];
     var istart = 0;
     var jstart = 0;
@@ -46,7 +46,7 @@ function plotDataNoBinding() {
     var y = d3.json("data/y.json");
     var h = d3.json("data/thickness.json");
     Promise.all([x, y, h]).then(([x, y, z]) => {
-        data = condense(x, y, z);
+        data = zipData(x, y, z);
         var min = min2d(z);
         var max = max2d(z);
 

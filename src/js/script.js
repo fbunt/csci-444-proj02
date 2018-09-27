@@ -38,38 +38,7 @@ function condense(x, y, z) {
 }
 
 
-function plotDataSVG() {
-    var svg = d3.select("#chart").append("svg")
-        .attr('width', 1000)
-        .attr('height', 1000);
-    var x = d3.json("data/x.json");
-    var y = d3.json("data/y.json");
-    var h = d3.json("data/thickness.json");
-    Promise.all([x, y, h]).then(([x, y, z]) => {
-        var min = min2d(z);
-        var max = max2d(z);
-
-        var color = d3.scaleSequential(d3.interpolateViridis)
-            .domain([min, max]);
-
-        data = condense(x, y, z);
-        svg.append("g")
-            .selectAll("rect")
-            .data(data)
-            .enter()
-            .append("rect")
-            .attr("x", p => p.x)
-            .attr("y", p => p.y)
-            .attr("width", 1)
-            .attr("height", 1)
-            .attr("fill", function(p) {
-                return color(p.z);
-            });
-    });
-}
-
-
-function plotDataCanvas() {
+function plotDataNoBinding() {
     // Clear previous plots if any
     d3.select("#chart").selectAll("canvas").remove();
 

@@ -26,9 +26,9 @@ function zipData(x, y, z) {
     for (i = istart; i < iend; ++i) {
         for (j = jstart; j < jend; ++j) {
             out.push({
-                x: i,
+                x: x[i],
+                y: y[j],
                 i: i,
-                y: j,
                 j: j,
                 z: z[j][i]
             });
@@ -66,7 +66,7 @@ function plotDataNoBinding() {
             .domain([min, max]);
         data.forEach((d, i) => {
             context.beginPath();
-            context.rect(scale(d.x), scale(d.y), scale(1), scale(1));
+            context.rect(scale(d.i), scale(d.j), scale(1), scale(1));
             context.fillStyle = color(d.z);
             context.fill();
             context.closePath();

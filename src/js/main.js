@@ -1,9 +1,9 @@
-"use strict"
+'use strict';
 
-const nj = require("numjs");
+const nj = require('numjs');
 
 
-const datadir = 'data/'
+const datadir = 'data/';
 const datafiles = [
     'bed.json',
     'smb.json',
@@ -12,20 +12,20 @@ const datafiles = [
     'thickness.json',
     'x.json',
     'y.json'
-]
+];
 
 var data = {};
 
 
 function loadData() {
     for (var i = 0; i < datafiles.length; ++i) {
-        var vname = datafiles[i].split(".")[0];
+        var vname = datafiles[i].split('.')[0];
         data[vname] = d3.json(datadir + datafiles[i]);
     }
 }
 
 
-$("document").ready(function() {
+$('document').ready(function() {
     loadData();
     plotDataNoBinding();
 });
@@ -83,15 +83,15 @@ function plotData(x, y, z) {
             .range([0, height]);
 
         // Clear previous plots if any
-        d3.select("#chart").selectAll("canvas").remove();
-        var canvas = d3.select("#chart").append("canvas")
+        d3.select('#chart').selectAll('canvas').remove();
+        var canvas = d3.select('#chart').append('canvas')
             .attr('width', width)
             .attr('height', height);
         var context = canvas.node().getContext('2d');
 
         var color = d3.scaleSequential(d3.interpolateViridis)
             .domain([min, max]);
-        lindata.forEach((d, i) => {
+        lindata.forEach((d) => {
             context.beginPath();
             context.rect(scale(d.i), scale(d.j), scale(1), scale(1));
             context.fillStyle = color(d.z);

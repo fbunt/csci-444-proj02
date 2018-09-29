@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "browserify-shim": "^3.8.14",
+    "numjs": "^0.16.0"
+  }
 }

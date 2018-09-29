@@ -1,5 +1,7 @@
 "use strict"
 
+const nj = require("numjs");
+
 
 const datadir = 'data/'
 const datafiles = [
@@ -97,4 +99,9 @@ function plotData(x, y, z) {
             context.closePath();
         });
     });
+}
+
+
+function plotDataWithBinding() {
+
 }

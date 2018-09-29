@@ -51,8 +51,8 @@ function zipData(x, y, z) {
     var jstart = 0;
     var iend = x.length;
     var jend = y.length;
-    for (i = istart; i < iend; ++i) {
-        for (j = jstart; j < jend; ++j) {
+    for (var i = istart; i < iend; ++i) {
+        for (var j = jstart; j < jend; ++j) {
             out.push({
                 x: x[i],
                 y: y[j],
@@ -73,7 +73,7 @@ function plotDataNoBinding() {
 
 function plotData(x, y, z) {
     Promise.all([x, y, z]).then(([x, y, z]) => {
-        lindata = zipData(x, y, z);
+        var lindata = zipData(x, y, z);
         var min = min2d(z);
         var max = max2d(z);
         var height = Math.floor(y.length / 2);

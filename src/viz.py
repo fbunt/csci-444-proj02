@@ -13,7 +13,7 @@ from matplotlib.pyplot import imshow, show
 # A "smb" - Rate of ice accumulation (m/year) (2991, 1670)
 # x "x" - x coordinate of data (1670,)
 # y "y" - y coordinate of data (2991,)
-f = h5py.File("data/GreenlandInBedCoord.h5")
+f = h5py.File("../data/GreenlandInBedCoord.h5")
 H = np.array(f["thickness"], dtype=np.float32)
 vx = np.array(f["VX"], dtype=np.float32)
 vy = np.array(f["VY"], dtype=np.float32)

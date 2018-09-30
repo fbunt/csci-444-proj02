@@ -66,7 +66,7 @@ function plotSurface(x, y, z, xslice, yslice) {
         const y = yy.slice(yslice);
         const z = zz.slice(yslice, xslice);
 
-        const margin = {top: 20, right: 60, bottom: 60, left: 70};
+        const margin = {top: 20, right: 100, bottom: 60, left: 70};
         const height = y.size;
         const width = x.size;
         const outerHeight = height + margin.top + margin.bottom;
@@ -127,15 +127,45 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
         .attr('transform', 'rotate(-90)')
         .text('North/South (km)');
 
+    const legendColor = d3.scaleSequential(d3.interpolateViridis);
+    const legendScale = d3.scaleLinear();
+    addLegend(z, canvasWidth, canvasHeight, legendScale, legendColor, svg,
+        'Surface Elevation (m)');
+
+    const color = d3.scaleSequential(d3.interpolateViridis)
+        .domain([z.min(), z.max()]);
+    const rectScale = d3.scaleLinear()
+        .domain([0, y.size])
+        .range([0, canvasHeight]);
+
+    drawRects(linData, color, rectScale, context);
+}
+
+
+const idCounters = {
+    'legendId': 0
+};
+
+
+function uniqueId(counterKey) {
+    return idCounters[counterKey]++;
+}
+
+
+/**
+ * Add a vertical legend to the right side of the plot as an SVG group.
+ */
+function addLegend(z, plotWidth, plotHeight, legendScale, cmap, svg,
+        legendText) {
     const legendWidth = 20,
-        legendHeight = canvasHeight,
-        legendX = canvasWidth + 10,
+        legendHeight = plotHeight,
+        legendX = plotWidth + 10,
         legendY = 0;
-    const legendColor = d3.scaleSequential(d3.interpolateViridis)
-        .domain([0, 100]);
+    cmap.domain([0, 100]);
+    const gradId = 'z-legend-grad-' + uniqueId('legendId');
     const legendGrad = svg.append('defs')
         .append('linearGradient')
-        .attr('id', 'z-legend-grad')
+        .attr('id', gradId)
         .attr('x1', '0%')
         .attr('y1', '100%')
         .attr('x2', '0%')
@@ -145,29 +175,26 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
         .enter()
         .append('stop')
         .attr('offset', (d) => { return d / 100; })
-        .attr('stop-color', (d) => { return legendColor(d); });
+        .attr('stop-color', (d) => { return cmap(d); });
     const legendContainer = svg.append('g');
     const legend = legendContainer.append('rect')
         .attr('x', legendX)
         .attr('y', legendY)
         .attr('width', legendWidth)
         .attr('height', legendHeight)
-        .style('fill', 'url(#z-legend-grad)');
-    const legendScale = d3.scaleLinear()
+        .style('fill', `url(#${gradId})`);
+    legendScale
         .domain([z.min(), z.max()])
-        .range([canvasHeight, 0]);
+        .range([plotHeight, 0]);
     const legendAxis = d3.axisRight(legendScale);
     legendContainer.append('g')
         .attr('transform', 'translate(' + (legendX + legendWidth) + ', 0)')
         .call(legendAxis);
-
-    const color = d3.scaleSequential(d3.interpolateViridis)
-        .domain([z.min(), z.max()]);
-    const rectScale = d3.scaleLinear()
-        .domain([0, y.size])
-        .range([0, canvasHeight]);
-
-    drawRects(linData, color, rectScale, context);
+    legendContainer.append('text')
+        .attr('x', -((legendHeight / 2) + 30))
+        .attr('y', legendX + legendWidth + 60)
+        .attr('transform', 'rotate(-90)')
+        .text(legendText);
 }
 
 

@@ -4,6 +4,15 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow, show
 
 
+def ishow(values):
+    if type(values) is np.ndarray:
+        values = [values]
+    for x in values:
+        plt.figure()
+        imshow(x)
+    show()
+
+
 # H "thickness" - Ice thickness (m) (2991, 1670)
 # vx "VX" - x component of velocity (m/year) (2991, 1670)
 # vy "VY" - y component of velocity (m/year) (2991, 1670)
@@ -19,6 +28,7 @@ vx = np.array(f["VX"], dtype=np.float32)
 vy = np.array(f["VY"], dtype=np.float32)
 V = np.sqrt(vx*vx + vy*vy)
 logv = np.log(V + 1)
+log10v = np.log10(V + 1)
 S = np.array(f["surface"], dtype=np.float32)
 B = np.array(f["bed"], dtype=np.float32)
 T = np.array(f["t2m"], dtype=np.float32)

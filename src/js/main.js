@@ -60,7 +60,8 @@ function plotSurface(x, y, z, xslice, yslice) {
         // Convert to ndarray and convert to km
         xx = nj.array(xx).divide(1000.0);
         yy = nj.array(yy).divide(1000.0);
-        zz = nj.array(zz).divide(1000.0);
+        //zz = nj.array(zz).divide(1000.0);
+        zz = nj.array(zz);
         const x = xx.slice(xslice);
         const y = yy.slice(yslice);
         const z = zz.slice(yslice, xslice);

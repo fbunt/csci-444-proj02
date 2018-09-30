@@ -65,7 +65,7 @@ function plotSurface(x, y, z, xslice, yslice) {
         const y = yy.slice(yslice);
         const z = zz.slice(yslice, xslice);
 
-        const margin = {top: 20, right: 30, bottom: 60, left: 70};
+        const margin = {top: 20, right: 60, bottom: 60, left: 70};
         const height = y.size;
         const width = x.size;
         const outerHeight = height + margin.top + margin.bottom;
@@ -100,7 +100,6 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
     const linData = zip3D(x, y, z);
 
     var context = canvas.node().getContext('2d');
-
     // Axes
     const xAxisScale = d3.scaleLinear()
         .domain([x.min(), x.max()])
@@ -126,6 +125,40 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
         .attr('dy', '-3.5em')
         .attr('transform', 'rotate(-90)')
         .text('North/South (km)');
+
+    const legendWidth = 20,
+        legendHeight = canvasHeight,
+        legendX = canvasWidth + 10,
+        legendY = 0;
+    const legendColor = d3.scaleSequential(d3.interpolateViridis)
+        .domain([0, 100]);
+    const legendGrad = svg.append('defs')
+        .append('linearGradient')
+        .attr('id', 'z-legend-grad')
+        .attr('x1', '0%')
+        .attr('y1', '100%')
+        .attr('x2', '0%')
+        .attr('y2', '0%')
+        .selectAll('stop')
+        .data(d3.ticks(0, 100, 20))
+        .enter()
+        .append('stop')
+        .attr('offset', (d) => { return d / 100; })
+        .attr('stop-color', (d) => { return legendColor(d); });
+    const legendContainer = svg.append('g');
+    const legend = legendContainer.append('rect')
+        .attr('x', legendX)
+        .attr('y', legendY)
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
+        .style('fill', 'url(#z-legend-grad)');
+    const legendScale = d3.scaleLinear()
+        .domain([z.min(), z.max()])
+        .range([canvasHeight, 0]);
+    const legendAxis = d3.axisRight(legendScale);
+    legendContainer.append('g')
+        .attr('transform', 'translate(' + (legendX + legendWidth) + ', 0)')
+        .call(legendAxis);
 
     const color = d3.scaleSequential(d3.interpolateViridis)
         .domain([z.min(), z.max()]);

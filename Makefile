@@ -38,8 +38,8 @@ release: $(BUILD_DIR) $(BUILD_CSS) $(BUILD_JS) $(BUILD_HTML) $(BUILD_DATA)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_CSS): $(BUILD_DIR) $(BUILD_CSS_DIR) $(CSS)
-	-cp $(CSS) $(BUILD_DIR_CSS) 2> /dev/null || true
+$(BUILD_CSS): $(BUILD_CSS_DIR) $(CSS)
+	-cp $(CSS) $(BUILD_CSS_DIR) 2> /dev/null || true
 
 $(BUILD_CSS_DIR):
 	mkdir -p $(BUILD_CSS_DIR)

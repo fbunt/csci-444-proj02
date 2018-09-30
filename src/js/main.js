@@ -57,9 +57,10 @@ function plotDataNoBinding() {
 
 function plotSurface(x, y, z, xslice, yslice) {
     Promise.all([x, y, z]).then(([xx, yy, zz]) => {
-        xx = nj.array(xx);
-        yy = nj.array(yy);
-        zz = nj.array(zz);
+        // Convert to ndarray and convert to km
+        xx = nj.array(xx).divide(1000.0);
+        yy = nj.array(yy).divide(1000.0);
+        zz = nj.array(zz).divide(1000.0);
         const x = xx.slice(xslice);
         const y = yy.slice(yslice);
         const z = zz.slice(yslice, xslice);
@@ -116,6 +117,15 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
         .call(xAxis);
     svg.append('g')
         .call(yAxis);
+    svg.append('text')
+        .attr('x', `${canvasWidth / 2 - 40}`)
+        .attr('y', `${canvasHeight + 40}`)
+        .text('East/West (km)');
+    svg.append('text')
+        .attr('x', `-${canvasHeight / 2 + 30}`)
+        .attr('dy', '-3.5em')
+        .attr('transform', 'rotate(-90)')
+        .text('North/South (km)');
 
     const color = d3.scaleSequential(d3.interpolateViridis)
         .domain([z.min(), z.max()]);

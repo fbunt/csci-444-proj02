@@ -31,34 +31,18 @@ $('document').ready(function() {
 });
 
 
-function max2d(data) {
-    return Math.max.apply(null, data.map(function(row) {
-        return Math.max.apply(null, row);
-    }));
-}
-
-
-function min2d(data) {
-    return Math.min.apply(null, data.map(function(row) {
-        return Math.min.apply(null, row);
-    }));
-}
-
-
-function zipData(x, y, z) {
+function zip3D(x, y, z) {
     var out = [];
-    var istart = 0;
-    var jstart = 0;
-    var iend = x.length;
-    var jend = y.length;
-    for (var i = istart; i < iend; ++i) {
-        for (var j = jstart; j < jend; ++j) {
+    const xlen = x.size;
+    const ylen = y.size;
+    for (var i = 0; i < xlen; ++i) {
+        for (var j = 0; j < ylen; ++j) {
             out.push({
-                x: x[i],
-                y: y[j],
+                x: x.get(i),
+                y: y.get(j),
                 i: i,
                 j: j,
-                z: z[j][i]
+                z: z.get(j, i)
             });
         }
     }
@@ -67,41 +51,88 @@ function zipData(x, y, z) {
 
 
 function plotDataNoBinding() {
-    plotData(data.x, data.y, data.surface);
+    plotSurface(data.x, data.y, data.surface, [850, 1400], [330, 1150]);
 }
 
 
-function plotData(x, y, z) {
-    Promise.all([x, y, z]).then(([x, y, z]) => {
-        var lindata = zipData(x, y, z);
-        var min = min2d(z);
-        var max = max2d(z);
-        var height = Math.floor(y.length / 2);
-        var width = Math.floor(x.length / 2);
-        var scale = d3.scaleLinear()
-            .domain([0, y.length])
-            .range([0, height]);
+function plotSurface(x, y, z, xslice, yslice) {
+    Promise.all([x, y, z]).then(([xx, yy, zz]) => {
+        xx = nj.array(xx);
+        yy = nj.array(yy);
+        zz = nj.array(zz);
+        const x = xx.slice(xslice);
+        const y = yy.slice(yslice);
+        const z = zz.slice(yslice, xslice);
+
+        const margin = {top: 20, right: 30, bottom: 60, left: 70};
+        const height = y.size;
+        const width = x.size;
+        const outerHeight = height + margin.top + margin.bottom;
+        const outerWidth = width + margin.left + margin.right;
 
         // Clear previous plots if any
         d3.select('#chart').selectAll('canvas').remove();
-        var canvas = d3.select('#chart').append('canvas')
+        d3.select('#chart')
+            .style('width', outerWidth + 'px')
+            .style('height', outerHeight + 'px');
+        const svg = d3.select('#chart').append('svg:svg')
+            .attr('width', outerWidth)
+            .attr('height', outerHeight)
+            .attr('class', 'svg-plot')
+            .append('g')
+            .attr('transform',
+                'translate(' + margin.left + ', ' + margin.top + ')');
+        const canvas = d3.select('#chart').append('canvas')
             .attr('width', width)
-            .attr('height', height);
-        var context = canvas.node().getContext('2d');
+            .attr('height', height)
+            // +1 to prevent covering the left axis
+            .style('margin-left', margin.left + 1 + 'px')
+            .style('margin-top', margin.top + 'px')
+            .attr('class', 'canvas-plot');
 
-        var color = d3.scaleSequential(d3.interpolateViridis)
-            .domain([min, max]);
-        lindata.forEach((d) => {
-            context.beginPath();
-            context.rect(scale(d.i), scale(d.j), scale(1), scale(1));
-            context.fillStyle = color(d.z);
-            context.fill();
-            context.closePath();
-        });
+        rasterPlot(x, y, z, width, height, svg, canvas);
     });
 }
 
 
-function plotDataWithBinding() {
+function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
+    const linData = zip3D(x, y, z);
 
+    var context = canvas.node().getContext('2d');
+
+    // Axes
+    const xAxisScale = d3.scaleLinear()
+        .domain([x.min(), x.max()])
+        .range([0, canvasWidth])
+        .nice();
+    const yAxisScale = d3.scaleLinear()
+        .domain([y.min(), y.max()])
+        .range([canvasHeight, 0])
+        .nice();
+    const xAxis = d3.axisBottom(xAxisScale);
+    const yAxis = d3.axisLeft(yAxisScale);
+    svg.append('g')
+        .attr('transform', 'translate(0, ' + canvasHeight + ')')
+        .call(xAxis);
+    svg.append('g')
+        .call(yAxis);
+
+    const color = d3.scaleSequential(d3.interpolateViridis)
+        .domain([z.min(), z.max()]);
+    const rectScale = d3.scaleLinear()
+        .domain([0, y.size])
+        .range([0, canvasHeight]);
+
+    drawRects(linData, color, rectScale, context);
+}
+
+
+function drawRects(linData, color, scale, context) {
+    linData.forEach((d) => {
+        context.beginPath();
+        context.rect(scale(d.i), scale(d.j), scale(1), scale(1));
+        context.fillStyle = color(d.z);
+        context.fill();
+        context.closePath();
+    });
 }

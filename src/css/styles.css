@@ -1,5 +1,28 @@
-.chart {
-    margin: auto;
+body {
+    width: 80%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+h2 {
+    margin-bottom: 0;
+}
+
+h4 {
+    margin-top: 10px;
+}
+
+.hypothesis {
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.chart-group {
+    margin-top: 50px;
 }
 
 .svg-plot, .canvas-plot {

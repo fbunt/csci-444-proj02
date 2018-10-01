@@ -6,10 +6,12 @@ const nj = require('numjs');
 const datadir = 'data/';
 const datafiles = [
     'bed.json',
-    'smb.json',
+    //'smb.json',
     'surface.json',
-    't2m.json',
+    //'t2m.json',
     'thickness.json',
+    'VX.json',
+    'VY.json',
     'x.json',
     'y.json'
 ];
@@ -23,6 +25,13 @@ const CHART_03_ID = '#chart03';
 const CHART_04_ID = '#chart04';
 const CHART_MARGIN = {top: 20, right: 100, bottom: 60, left: 70};
 const CHART_CMAP = d3.interpolateViridis;
+
+
+/** Window for the Northeast Greenland Ice Stream */
+const NEGIS_SLICES_MAIN = {
+    x: [850, 1400],
+    y: [330, 1150]
+};
 
 
 /** Used for generating unique id values */
@@ -48,12 +57,15 @@ function uniqueId(counterKey) {
  */
 function loadData() {
     for (var i = 0; i < datafiles.length; ++i) {
-        var vname = datafiles[i].split('.')[0];
+        var vname = datafiles[i].split('.')[0].toLowerCase();
         data[vname] = d3.json(datadir + datafiles[i]);
     }
 }
 
 
+/**
+ * Zip data into flat array for working with D3.
+ */
 function zip3D(x, y, z) {
     var out = [];
     const xlen = x.size;
@@ -73,22 +85,24 @@ function zip3D(x, y, z) {
 }
 
 
-function plotDataNoBinding() {
-    plotSurfaceData(data.x, data.y, data.surface, [850, 1400], [330, 1150]);
+function main(x, y, bed, surface, thickness, vx, vy) {
+    plotChart00(x, y, surface);
+    plotChart01(x, y, surface);
 }
 
-function plotSurfaceData(xPromise, yPromise, surfacePromise, xslice, yslice) {
-    Promise.all([xPromise, yPromise, surfacePromise]).then(
-        ([x, y, surface]) => {
-            x = nj.array(x).divide(1000.0);
-            y = nj.array(y).divide(1000.0);
-            surface = nj.array(surface);
-            const xx = x.slice(xslice);
-            const yy = y.slice(yslice);
-            const zz = surface.slice(yslice, xslice);
-            plotSurface(xx, yy, zz, CHART_MARGIN, CHART_01_ID,
-                'Surface Elevation (MSL)', CHART_CMAP, 0.75);
-        });
+
+function plotChart00(x, y, surface) {
+    plotSurface(x, y, surface, CHART_MARGIN, CHART_00_ID,
+        'Surface Elevation (MSL)', CHART_CMAP, 0.21);
+}
+
+
+function plotChart01(x, y, surface) {
+    const xx = x.slice(NEGIS_SLICES_MAIN.x);
+    const yy = y.slice(NEGIS_SLICES_MAIN.y);
+    const zz = surface.slice(NEGIS_SLICES_MAIN.y, NEGIS_SLICES_MAIN.x);
+    plotSurface(xx, yy, zz, CHART_MARGIN, CHART_01_ID,
+        'Surface Elevation (MSL)', CHART_CMAP, 0.75);
 }
 
 
@@ -243,5 +257,24 @@ function drawRects(linData, color, scale, context) {
 
 $('document').ready(function() {
     loadData();
-    plotDataNoBinding();
+    Promise.all(
+        [
+            data.x,
+            data.y,
+            data.bed,
+            data.surface,
+            data.thickness,
+            data.vx,
+            data.vy
+        ])
+        .then(([x, y, bed, surface, thickness, vx, vy]) => {
+            x = nj.float64(x).divide(1000.0);
+            y = nj.float64(y).divide(1000.0);
+            bed = nj.float64(bed);
+            surface = nj.float64(surface);
+            thickness = nj.float64(thickness);
+            vx = nj.float64(vx);
+            vy = nj.float64(vy);
+            main(x, y, bed, surface, thickness, vx, vy);
+        });
 });

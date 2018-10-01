@@ -86,7 +86,7 @@ function zip3D(x, y, z) {
 
 
 function main(x, y, bed, surface, thickness, vx, vy) {
-    //plotChart00(x, y, surface);
+    plotChart00(x, y, surface);
     plotChart01(x, y, surface);
     plotChart02(x, y, vx, vy);
     plotChart03(x, y, thickness);

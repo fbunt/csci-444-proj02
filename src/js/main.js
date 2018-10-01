@@ -86,10 +86,11 @@ function zip3D(x, y, z) {
 
 
 function main(x, y, bed, surface, thickness, vx, vy) {
-    plotChart00(x, y, surface);
+    //plotChart00(x, y, surface);
     plotChart01(x, y, surface);
     plotChart02(x, y, vx, vy);
-    plotChart03(x, y, bed);
+    plotChart03(x, y, thickness);
+    plotChart04(x, y, bed);
 }
 
 
@@ -121,13 +122,23 @@ function plotChart02(x, y, vx, vy) {
 }
 
 
-function plotChart03(x, y, bed) {
+function plotChart03(x, y, thickness) {
+    const xx = x.slice(NEGIS_SLICES_MAIN.x);
+    const yy = y.slice(NEGIS_SLICES_MAIN.y);
+    const tview = thickness.slice(NEGIS_SLICES_MAIN.y, NEGIS_SLICES_MAIN.x);
+    plotSurface(xx, yy, tview, CHART_MARGIN, CHART_03_ID,
+        'Ice Thickness (m)', CHART_CMAP, 0.75);
+}
+
+
+function plotChart04(x, y, bed) {
     const xx = x.slice(NEGIS_SLICES_MAIN.x);
     const yy = y.slice(NEGIS_SLICES_MAIN.y);
     const bedview = bed.slice(NEGIS_SLICES_MAIN.y, NEGIS_SLICES_MAIN.x);
-    plotSurface(xx, yy, bedview, CHART_MARGIN, CHART_03_ID,
+    plotSurface(xx, yy, bedview, CHART_MARGIN, CHART_04_ID,
         'Bed Elevation (MSL)', CHART_CMAP, 0.75);
 }
+
 
 /**
  * Plot a 3D surface data as a 2D raster.

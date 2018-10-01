@@ -88,6 +88,7 @@ function zip3D(x, y, z) {
 function main(x, y, bed, surface, thickness, vx, vy) {
     plotChart00(x, y, surface);
     plotChart01(x, y, surface);
+    plotChart02(x, y, vx, vy);
 }
 
 
@@ -106,13 +107,26 @@ function plotChart01(x, y, surface) {
 }
 
 
+function plotChart02(x, y, vx, vy) {
+    const v = nj.sqrt(vx.pow(2).add(vy.pow(2)));
+    const logv = nj.log(v.add(1));
+    const xx = x.slice(NEGIS_SLICES_MAIN.x);
+    const yy = y.slice(NEGIS_SLICES_MAIN.y);
+    const vv = v.slice(NEGIS_SLICES_MAIN.y, NEGIS_SLICES_MAIN.x);
+    const logvv = logv.slice(NEGIS_SLICES_MAIN.y, NEGIS_SLICES_MAIN.x);
+    plotSurface(xx, yy, logvv, CHART_MARGIN, CHART_02_ID,
+        'Flow Speed (Log of V + 1) (m/yr)', CHART_CMAP, 0.75, true,
+        vv.min() + 1, vv.max() + 1, Math.E);
+}
+
 /**
  * Plot a 3D surface data as a 2D raster.
  *
  * @param cmap The sequential color interpolator to use.
  * @param scale The scale factor to scale the data with. Default 1:1.
  */
-function plotSurface(x, y, z, margin, chartId, legendText, cmap, scale=1) {
+function plotSurface(x, y, z, margin, chartId, legendText, cmap, scale=1,
+        isLog=false, logInvMin=0.1, logInvMax=100, logBase=Math.E) {
     // Scaling for display of data as pixels.
     var max = Math.max(x.size, y.size);
     const dataScale = d3.scaleLinear()
@@ -145,7 +159,7 @@ function plotSurface(x, y, z, margin, chartId, legendText, cmap, scale=1) {
         .attr('class', 'canvas-plot');
 
     rasterPlot(x, y, z, width, height, svg, canvas, legendText, cmap,
-            dataScale);
+            dataScale, isLog, logInvMin, logInvMax, logBase);
 }
 
 
@@ -153,7 +167,7 @@ function plotSurface(x, y, z, margin, chartId, legendText, cmap, scale=1) {
  * Draws the raster data on the canvas and adds a legend and axes.
  */
 function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas,
-        legendText, cmap, dataScale) {
+        legendText, cmap, dataScale, isLog, logInvMin, logInvMax, logBase) {
     const linData = zip3D(x, y, z);
 
     var context = canvas.node().getContext('2d');
@@ -187,9 +201,8 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas,
         .text('North/South (km)');
 
     const legendColor = d3.scaleSequential(cmap);
-    const legendScale = d3.scaleLinear();
-    addLegend(z, canvasWidth, canvasHeight, legendScale, legendColor, svg,
-        legendText);
+    addLegend(z, canvasWidth, canvasHeight, legendColor, svg, legendText,
+            isLog, logInvMin, logInvMax, logBase);
 
     const color = d3.scaleSequential(cmap)
         .domain([z.min(), z.max()]);
@@ -201,8 +214,8 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas,
 /**
  * Add a vertical legend to the right side of the plot as an SVG group.
  */
-function addLegend(z, plotWidth, plotHeight, legendScale, legendColor, svg,
-        legendText) {
+function addLegend(z, plotWidth, plotHeight, legendColor, svg, legendText,
+        isLog, logInvMin, logInvMax, logBase) {
     const legendWidth = 20,
         legendHeight = plotHeight,
         legendX = plotWidth + 10,
@@ -229,10 +242,22 @@ function addLegend(z, plotWidth, plotHeight, legendScale, legendColor, svg,
         .attr('width', legendWidth)
         .attr('height', legendHeight)
         .style('fill', `url(#${gradId})`);
-    legendScale
-        .domain([z.min(), z.max()])
-        .range([plotHeight, 0]);
+    const legendScale = ((z, h, isLog, logInvMin, logInvMax, logBase) => {
+        if (!isLog) {
+            return d3.scaleLinear()
+                .domain([z.min(), z.max()])
+                .range([h, 0]);
+        }
+        return d3.scaleLog()
+            .base(logBase)
+            .domain([logInvMin, logInvMax])
+            .range([h, 0])
+            .nice();
+    })(z, plotHeight, isLog, logInvMin, logInvMax, logBase);
     const legendAxis = d3.axisRight(legendScale);
+    if (isLog) {
+        legendAxis.ticks(10, '.1s');
+    }
     legendContainer.append('g')
         .attr('transform', 'translate(' + (legendX + legendWidth) + ', 0)')
         .call(legendAxis);

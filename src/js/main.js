@@ -15,20 +15,43 @@ const datafiles = [
 ];
 
 var data = {};
+// Chart container IDs
+const CHART_00_ID = '#chart00';
+const CHART_01_ID = '#chart01';
+const CHART_02_ID = '#chart02';
+const CHART_03_ID = '#chart03';
+const CHART_04_ID = '#chart04';
+const CHART_MARGIN = {top: 20, right: 100, bottom: 60, left: 70};
+const CHART_CMAP = d3.interpolateViridis;
 
 
+/** Used for generating unique id values */
+const idCounters = {
+    'legendId': 0
+};
+
+
+/** Generates a unique id value for the given type key */
+function uniqueId(counterKey) {
+    if (!idCounters.hasOwnProperty(counterKey)) {
+        idCounters[counterKey] = 0;
+    }
+    return idCounters[counterKey]++;
+}
+
+
+/**
+ * Loads the project using async Promises.
+ *
+ * The data for a given promise can be accessed using the Promise.then
+ * method.
+ */
 function loadData() {
     for (var i = 0; i < datafiles.length; ++i) {
         var vname = datafiles[i].split('.')[0];
         data[vname] = d3.json(datadir + datafiles[i]);
     }
 }
-
-
-$('document').ready(function() {
-    loadData();
-    plotDataNoBinding();
-});
 
 
 function zip3D(x, y, z) {
@@ -51,52 +74,72 @@ function zip3D(x, y, z) {
 
 
 function plotDataNoBinding() {
-    plotSurface(data.x, data.y, data.surface, [850, 1400], [330, 1150]);
+    plotSurfaceData(data.x, data.y, data.surface, [850, 1400], [330, 1150]);
+}
+
+function plotSurfaceData(xPromise, yPromise, surfacePromise, xslice, yslice) {
+    Promise.all([xPromise, yPromise, surfacePromise]).then(
+        ([x, y, surface]) => {
+            x = nj.array(x).divide(1000.0);
+            y = nj.array(y).divide(1000.0);
+            surface = nj.array(surface);
+            const xx = x.slice(xslice);
+            const yy = y.slice(yslice);
+            const zz = surface.slice(yslice, xslice);
+            plotSurface(xx, yy, zz, CHART_MARGIN, CHART_01_ID,
+                'Surface Elevation (MSL)', CHART_CMAP, 0.75);
+        });
 }
 
 
-function plotSurface(x, y, z, xslice, yslice) {
-    Promise.all([x, y, z]).then(([xx, yy, zz]) => {
-        // Convert to ndarray and convert to km
-        xx = nj.array(xx).divide(1000.0);
-        yy = nj.array(yy).divide(1000.0);
-        zz = nj.array(zz);
-        const x = xx.slice(xslice);
-        const y = yy.slice(yslice);
-        const z = zz.slice(yslice, xslice);
+/**
+ * Plot a 3D surface data as a 2D raster.
+ *
+ * @param cmap The sequential color interpolator to use.
+ * @param scale The scale factor to scale the data with. Default 1:1.
+ */
+function plotSurface(x, y, z, margin, chartId, legendText, cmap, scale=1) {
+    // Scaling for display of data as pixels.
+    var max = Math.max(x.size, y.size);
+    const dataScale = d3.scaleLinear()
+        .domain([0, max])
+        .range([0, Math.floor(max * scale)]);
+    const height = dataScale(y.size);
+    const width = dataScale(x.size);
+    const outerHeight = height + margin.top + margin.bottom;
+    const outerWidth = width + margin.left + margin.right;
 
-        const margin = {top: 20, right: 100, bottom: 60, left: 70};
-        const height = y.size;
-        const width = x.size;
-        const outerHeight = height + margin.top + margin.bottom;
-        const outerWidth = width + margin.left + margin.right;
+    // Clear previous plots if any
+    const chartContainer = d3.select(chartId);
+    chartContainer.selectAll('canvas').remove();
+    chartContainer
+        .style('width', outerWidth + 'px')
+        .style('height', outerHeight + 'px');
+    const svg = chartContainer.append('svg:svg')
+        .attr('width', outerWidth)
+        .attr('height', outerHeight)
+        .attr('class', 'svg-plot')
+        .append('g')
+        .attr('transform',
+            'translate(' + margin.left + ', ' + margin.top + ')');
+    const canvas = chartContainer.append('canvas')
+        .attr('width', width)
+        .attr('height', height)
+        // +1 to prevent covering the left axis
+        .style('margin-left', margin.left + 1 + 'px')
+        .style('margin-top', margin.top + 'px')
+        .attr('class', 'canvas-plot');
 
-        // Clear previous plots if any
-        d3.select('#chart').selectAll('canvas').remove();
-        d3.select('#chart')
-            .style('width', outerWidth + 'px')
-            .style('height', outerHeight + 'px');
-        const svg = d3.select('#chart').append('svg:svg')
-            .attr('width', outerWidth)
-            .attr('height', outerHeight)
-            .attr('class', 'svg-plot')
-            .append('g')
-            .attr('transform',
-                'translate(' + margin.left + ', ' + margin.top + ')');
-        const canvas = d3.select('#chart').append('canvas')
-            .attr('width', width)
-            .attr('height', height)
-            // +1 to prevent covering the left axis
-            .style('margin-left', margin.left + 1 + 'px')
-            .style('margin-top', margin.top + 'px')
-            .attr('class', 'canvas-plot');
-
-        rasterPlot(x, y, z, width, height, svg, canvas);
-    });
+    rasterPlot(x, y, z, width, height, svg, canvas, legendText, cmap,
+            dataScale);
 }
 
 
-function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
+/**
+ * Draws the raster data on the canvas and adds a legend and axes.
+ */
+function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas,
+        legendText, cmap, dataScale) {
     const linData = zip3D(x, y, z);
 
     var context = canvas.node().getContext('2d');
@@ -116,51 +159,41 @@ function rasterPlot(x, y, z, canvasWidth, canvasHeight, svg, canvas) {
         .call(xAxis);
     svg.append('g')
         .call(yAxis);
+    // X axis text
     svg.append('text')
-        .attr('x', `${canvasWidth / 2 - 40}`)
-        .attr('y', `${canvasHeight + 40}`)
+        .attr('x', (canvasWidth / 2) - 40)
+        .attr('y', canvasHeight + 40)
         .text('East/West (km)');
+    // Y axis text
     svg.append('text')
-        .attr('x', `-${canvasHeight / 2 + 30}`)
+        // Flip x and y and use negative  due to rotation
+        .attr('x', -((canvasHeight / 2) + 30))
         .attr('dy', '-3.5em')
         .attr('transform', 'rotate(-90)')
         .text('North/South (km)');
 
-    const legendColor = d3.scaleSequential(d3.interpolateViridis);
+    const legendColor = d3.scaleSequential(cmap);
     const legendScale = d3.scaleLinear();
     addLegend(z, canvasWidth, canvasHeight, legendScale, legendColor, svg,
-        'Surface Elevation (m)');
+        legendText);
 
-    const color = d3.scaleSequential(d3.interpolateViridis)
+    const color = d3.scaleSequential(cmap)
         .domain([z.min(), z.max()]);
-    const rectScale = d3.scaleLinear()
-        .domain([0, y.size])
-        .range([0, canvasHeight]);
 
-    drawRects(linData, color, rectScale, context);
-}
-
-
-const idCounters = {
-    'legendId': 0
-};
-
-
-function uniqueId(counterKey) {
-    return idCounters[counterKey]++;
+    drawRects(linData, color, dataScale, context);
 }
 
 
 /**
  * Add a vertical legend to the right side of the plot as an SVG group.
  */
-function addLegend(z, plotWidth, plotHeight, legendScale, cmap, svg,
+function addLegend(z, plotWidth, plotHeight, legendScale, legendColor, svg,
         legendText) {
     const legendWidth = 20,
         legendHeight = plotHeight,
         legendX = plotWidth + 10,
         legendY = 0;
-    cmap.domain([0, 100]);
+    legendColor.domain([0, 100]);
     const gradId = 'z-legend-grad-' + uniqueId('legendId');
     const legendGrad = svg.append('defs')
         .append('linearGradient')
@@ -174,7 +207,7 @@ function addLegend(z, plotWidth, plotHeight, legendScale, cmap, svg,
         .enter()
         .append('stop')
         .attr('offset', (d) => { return d / 100; })
-        .attr('stop-color', (d) => { return cmap(d); });
+        .attr('stop-color', (d) => { return legendColor(d); });
     const legendContainer = svg.append('g');
     const legend = legendContainer.append('rect')
         .attr('x', legendX)
@@ -206,3 +239,9 @@ function drawRects(linData, color, scale, context) {
         context.closePath();
     });
 }
+
+
+$('document').ready(function() {
+    loadData();
+    plotDataNoBinding();
+});

@@ -89,6 +89,7 @@ function main(x, y, bed, surface, thickness, vx, vy) {
     plotChart00(x, y, surface);
     plotChart01(x, y, surface);
     plotChart02(x, y, vx, vy);
+    plotChart03(x, y, bed);
 }
 
 
@@ -117,6 +118,15 @@ function plotChart02(x, y, vx, vy) {
     plotSurface(xx, yy, logvv, CHART_MARGIN, CHART_02_ID,
         'Flow Speed (Log of V + 1) (m/yr)', CHART_CMAP, 0.75, true,
         vv.min() + 1, vv.max() + 1, Math.E);
+}
+
+
+function plotChart03(x, y, bed) {
+    const xx = x.slice(NEGIS_SLICES_MAIN.x);
+    const yy = y.slice(NEGIS_SLICES_MAIN.y);
+    const bedview = bed.slice(NEGIS_SLICES_MAIN.y, NEGIS_SLICES_MAIN.x);
+    plotSurface(xx, yy, bedview, CHART_MARGIN, CHART_03_ID,
+        'Bed Elevation (MSL)', CHART_CMAP, 0.75);
 }
 
 /**
